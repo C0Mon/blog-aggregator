@@ -7,38 +7,50 @@ import (
 
 const configFileName = "aggrigatorconfig.json"
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 type Config struct {
 	DbUrl           string `json:"db_url"`
 	CurrentUserName string `json:"current_user_name"`
 }
 
-func Read() Config {
-	configPath := getConfigPath()
+func Read() (Config, error) {
+	configPath, err := getConfigPath()
+	if err != nil {
+		return Config{}, err
+	}
+
 	data, err := os.ReadFile(configPath)
-	check(err)
+	if err != nil {
+		return Config{}, err
+	}
+
 	cfg := Config{}
 	err = json.Unmarshal(data, &cfg)
-	check(err)
-	return cfg
+	if err != nil {
+		return Config{}, err
+	}
+	return cfg, nil
 }
 
-func (cfg *Config) SetUser(newUser string) {
+func (cfg *Config) SetUser(newUser string) error {
 	cfg.CurrentUserName = newUser
 	data, err := json.Marshal(cfg)
-	check(err)
+	if err != nil {
+		return err
+	}
 
-	configPath := getConfigPath()
+	configPath, err := getConfigPath()
+	if err != nil {
+		return err
+	}
+
 	os.WriteFile(configPath, data, os.FileMode(0777))
+	return nil
 }
 
-func getConfigPath() string {
+func getConfigPath() (string, error) {
 	homePath, err := os.UserHomeDir()
-	check(err)
-	return homePath + "/" + configFileName
+	if err != nil {
+		return "", err
+	}
+	return homePath + "/" + configFileName, nil
 }
